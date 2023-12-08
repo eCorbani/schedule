@@ -52,10 +52,12 @@ def submit_event(request):
         title = request.POST.get('title')
         event_date = request.POST.get('event_date')
         description = request.POST.get('description')
+        location = request.POST.get('location')
         user = request.user
         Event.objects.create(title=title,
                              event_date=event_date,
                              description=description,
+                             location=location,
                              user=user)
 
     return redirect('/')
