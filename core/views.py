@@ -3,6 +3,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from core.models import Event
+from datetime import datetime, timedelta
+from django.http.response import Http404, JsonResponse
 
 
 # Create your views here.
@@ -35,10 +37,20 @@ def submit_login(request):
 @login_required(login_url='/login/')
 def events_list(request):
     user = request.user
-    events = Event.objects.filter(user=user)
+    current_date = datetime.now() - timedelta(hours=1)
+    events = Event.objects.filter(user=user,
+                                  event_date__gt=current_date)
     data = {'events': events}
 
     return render(request, 'schedule.html', data)
+
+
+@login_required(login_url='/login/')
+def json_event_list(request):
+    user = request.user
+    events = Event.objects.filter(user=user).values('id', 'title')
+
+    return JsonResponse(list(events), safe=False)
 
 
 @login_required(login_url='/login/')
@@ -86,7 +98,12 @@ def submit_event(request):
 @login_required(login_url='/login/')
 def delete_event(request, event_id):
     user = request.user
-    filtered_event = Event.objects.get(id=event_id)
+    try:
+        filtered_event = Event.objects.get(id=event_id)
+    except Exception:
+        raise Http404
     if user == filtered_event.user:
         filtered_event.delete()
+    else:
+        raise Http404()
     return redirect('/')
